@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,54 @@ from new_embedding_generation import (  # type: ignore
     _to_bf16_minus1_1,
     load_tokenizer_only,
 )
+
+def configure_cosmos_loguru() -> None:
+    """
+    Cosmos uses loguru at import time and can be very noisy when loading checkpoints.
+    This re-configures its stdout handler to keep backend logs readable.
+
+    Env:
+    - COSMOS_LOGURU_LEVEL: default "ERROR"
+    - COSMOS_LOG_QUIET: default "1" (drop known spammy checkpoint messages)
+    """
+    try:
+        from cosmos_predict2._src.imaginaire.utils import log as cosmos_log
+    except Exception:
+        return
+
+    level = os.environ.get("COSMOS_LOGURU_LEVEL", "ERROR").strip() or "ERROR"
+    quiet = os.environ.get("COSMOS_LOG_QUIET", "1").strip() != "0"
+
+    drop_substrings = (
+        "Skipping key ",
+        "_IncompatibleKeys(",
+        "xtra_state introduced by TransformerEngine",
+        "introduced by TransformerEngine for FP8 in the checkpoint",
+        "Reloading all modules from package",
+        "Using mean loss reduce with loss scale",
+        "load model in non-strict mode",
+    )
+
+    def _filter(record: Any) -> bool:
+        # Preserve rank0-only behavior
+        if not cosmos_log._rank0_only_filter(record):  # type: ignore[attr-defined]
+            return False
+        if quiet:
+            msg = record.get("message", "")
+            if any(s in msg for s in drop_substrings):
+                return False
+        return True
+
+    try:
+        datetime_format = cosmos_log.get_datetime_format()
+        machine_format = cosmos_log.get_machine_format()
+        message_format = cosmos_log.get_message_format()
+        fmt = f"{datetime_format}{machine_format}{message_format}"
+        cosmos_log.logger.remove()
+        cosmos_log.logger.add(sys.stdout, level=level, format=fmt, filter=_filter)
+    except Exception:
+        # Fallback: do nothing if loguru internals change
+        return
 
 
 def _get_fps(meta: dict) -> float | None:
@@ -202,13 +251,23 @@ class VideoRiskPredictor:
         feat = np.asarray(feat, dtype=np.float32).reshape(1, -1)
         p_pos = float(self.xgb.predict_proba(feat)[:, 1][0])
 
+        # Also expose the raw model score (log-odds margin) for debugging.
+        # This is useful to understand "how confident" the tree ensemble is before sigmoid.
+        margin = None
+        try:
+            import xgboost as xgb  # type: ignore
+
+            margin = float(self.xgb.get_booster().predict(xgb.DMatrix(feat), output_margin=True)[0])
+        except Exception:
+            margin = None
+
         # UI mapping (simple heuristic):
         # - "confidence" = probability
         # - "impact_in" is not directly modeled; we map it into [0.5, seconds] with a small risk-dependent shift.
         impact_in = float(np.clip(self.cfg.seconds - p_pos * 1.0, 0.5, self.cfg.seconds))
 
         if p_pos >= 0.85:
-            risk = "CRITICAL RISK"
+            risk = "HIGH RISK"
             status = "INTERSECTION IMMINENT"
         elif p_pos >= 0.60:
             risk = "ELEVATED RISK"
@@ -223,6 +282,7 @@ class VideoRiskPredictor:
             "impact_in_s": round(impact_in, 2),
             "confidence": round(p_pos, 6),
             "confidence_percent": round(p_pos * 100.0, 3),
+            "xgb_margin": (round(margin, 6) if margin is not None else None),
         }
 
     def predict_video_bytes(self, video_bytes: bytes, suffix: str = ".mp4") -> dict[str, Any]:
@@ -233,6 +293,9 @@ class VideoRiskPredictor:
 
 
 def load_from_env() -> VideoRiskPredictor:
+    # Keep checkpoint loading logs quiet by default (can override via env vars).
+    configure_cosmos_loguru()
+
     # Required
     model_path = os.environ.get("XGB_MODEL_PATH", "").strip()
     if not model_path:
