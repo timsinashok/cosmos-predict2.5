@@ -1,6 +1,8 @@
 # ForeSight Safety  
 ### Predicting hazards before they happen.
 
+## We optimized NVIDIA Cosmos World Model based Hazard Predictor increasing efficiency by the factor of 1800 compared to Base NVIDIA Cosmos.
+
 ForeSight Safety is a **future-aware safety system** built on top of NVIDIA Cosmos that detects **unsafe situations before they occur**, rather than reacting after the fact.
 
 Most industrial safety systems today rely on vision or vision-language models that classify the *current frame* as safe or unsafe. By the time a hazard is detected, the unsafe condition often already exists.
