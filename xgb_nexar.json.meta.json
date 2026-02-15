@@ -1,0 +1,28 @@
+{
+  "class_counts": {
+    "test_neg": 34,
+    "test_pos": 34,
+    "train_neg": 305,
+    "train_pos": 304
+  },
+  "feature_dim": 32,
+  "metrics": {
+    "accuracy": 0.8088235294117647,
+    "roc_auc": 0.8581314878892734
+  },
+  "seed": 0,
+  "test_size": 0.1,
+  "trained_from": "nexar_last5s_1fps.pt",
+  "use_split": "test-private",
+  "xgb_params": {
+    "colsample_bytree": 0.8,
+    "early_stopping_rounds": 30,
+    "learning_rate": 0.05,
+    "max_depth": 3,
+    "min_child_weight": 1.0,
+    "n_estimators": 500,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "subsample": 0.8
+  }
+}
