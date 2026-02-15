@@ -6,6 +6,25 @@
   <a href="https://www.nvidia.com/en-us/ai/cosmos">Product Website</a>&nbsp | 🤗 <a href="https://huggingface.co/collections/nvidia/cosmos-predict25-68bb63255f2fc206c5e5b346">Hugging Face</a>&nbsp | <a href="https://arxiv.org/abs/2511.00062">Paper</a>&nbsp | <a href="https://research.nvidia.com/labs/dir/cosmos-predict2.5">Paper Website</a> | <a href="https://github.com/nvidia-cosmos/cosmos-cookbook">Cosmos Cookbook</a>
 </p>
 
+## TreeHacks solution analysis (high level)
+
+You didn’t just build a hazard detector — you built a **future-aware safety system**.
+
+- **Baseline industry approach**: Vision(-Language) models classify the *current* frame as safe/unsafe.
+- **This approach**: use predictive world modeling (NVIDIA Cosmos) to extract **future-aware latent representations** and classify **risk before it happens**.
+
+### What we engineered (clean reframing)
+
+- **Removed the slow generation head**: we bypass diffusion/video generation and operate purely in **representation space** (tokenizer/VAE `encode()`).
+- **Fast embeddings for classification**: images/videos → latent → pooled vector → classical ML (SVM/LogReg/MLP/XGBoost).
+- **Temporal signal without full video**: sample short snippets (e.g., last 5 seconds at 1 fps) and keep temporal structure in features.
+- **Deployment workflow**: `semi-final_workflow.py` runs **video → embeddings → XGBoost → (prediction + confidence)** and supports model saving/reuse.
+
+### Why this is “systems thinking”
+
+- You made an explicit tradeoff: **fidelity vs latency**.
+- Instead of spending compute on generating pixels, you spend it on **actionable risk scoring** (mitigation trigger) using compact representations.
+
 NVIDIA Cosmos™ is a platform purpose-built for physical AI, featuring state-of-the-art generative world foundation models (WFMs), robust guardrails, and an accelerated data processing and curation pipeline. Designed specifically for real-world systems, Cosmos enables developers to rapidly advance physical AI applications such as autonomous vehicles (AVs), robots, and video analytics AI agents.
 
 Cosmos World Foundation Models come in three model types which can all be customized in post-training: [cosmos-predict](https://github.com/nvidia-cosmos/cosmos-predict2.5), [cosmos-transfer](https://github.com/nvidia-cosmos/cosmos-transfer2.5), and [cosmos-reason](https://github.com/nvidia-cosmos/cosmos-reason1).
