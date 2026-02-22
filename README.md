@@ -1,9 +1,9 @@
-# ForeSight Safety  
+# Sentinel AI
 ### Predicting hazards before they happen.
 
 ## We optimized NVIDIA Cosmos World Model based Hazard Predictor increasing efficiency by the factor of 1800 compared to Base NVIDIA Cosmos.
 
-ForeSight Safety is a **future-aware safety system** built on top of NVIDIA Cosmos that detects **unsafe situations before they occur**, rather than reacting after the fact.
+Sentinel AI is a **future-aware safety system** built on top of NVIDIA Cosmos that detects **unsafe situations before they occur**, rather than reacting after the fact.
 
 Most industrial safety systems today rely on vision or vision-language models that classify the *current frame* as safe or unsafe. By the time a hazard is detected, the unsafe condition often already exists.
 
@@ -27,7 +27,7 @@ This shifts safety from:
 
 ## What We Engineered
 
-ForeSight Safety is intentionally designed as a **systems-level optimization**, not a pixel-generation demo.
+Sentinel AI is intentionally designed as a **systems-level optimization**, not a pixel-generation demo.
 
 ### 1. Representation-Only Inference  
 We remove the slow diffusion / video generation head and operate purely in **representation space**:
@@ -65,7 +65,7 @@ video → latent embeddings → classifier → (risk score + confidence)
 
 ## Why This Is Systems Thinking
 
-ForeSight Safety makes an explicit engineering tradeoff:
+Sentinel AI makes an explicit engineering tradeoff:
 
 - **Less fidelity**
 - **Much lower latency**
